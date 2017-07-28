@@ -3,10 +3,6 @@ import sys
 import bge
 import ai
 
-# Hack to support module layout in git
-sys.path.append(bge.logic.expandPath('//../'))
-sys.path.append(bge.logic.expandPath('//../bge-netplay/'))
-
 
 def exception_handler(type_, value, tb):
     # print the exception
@@ -23,9 +19,6 @@ def exception_handler(type_, value, tb):
 
 # tell Python to use your function
 sys.excepthook = exception_handler
-
-import tables
-tables.define()
 
 
 def load_assets():
@@ -164,8 +157,6 @@ class Game:
             if b.update(dt):
                 self.timers.remove(b)
 
-        bge.logic.netplay.update()
-
 
 class Timer:
     def __init__(self, seconds, callback, args):
@@ -219,23 +210,9 @@ class Lerper:
 def main():
     if hasattr(bge.logic, 'game'):
         bge.logic.game.update()
-        bge.logic.netplay.update()
     else:
         # First frame
         load_assets()
 
-        from netplay import host
-        # Network settings from menu, if applicable, will be in globalDict
-        network = bge.logic.globalDict.get('network', None)
-        if network is None:
-            bge.logic.netplay = host.ServerHost()
-        else:
-            if network['mode'] == 'offline':
-                bge.logic.netplay = host.ServerHost(offline=True)
-            elif network['mode'] == 'server':
-                bge.logic.netplay = host.ServerHost()
-            else:
-                bge.logic.netplay = host.ClientHost(server_ip=network['server_ip'])
-
-        bge.logic.players = []
+        bge.logic.players = [None, None]
         bge.logic.game = Game()
