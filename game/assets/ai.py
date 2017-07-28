@@ -112,6 +112,9 @@ def degreesFromVect(vect):
 
 
 def deadCheck(ai):
+    if ai is None:
+        return True
+
     component = ai.component
     if component.hp < 1 or component.owner.invalid:  # or component.disabled:
         return True

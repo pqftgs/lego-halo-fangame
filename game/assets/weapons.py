@@ -11,7 +11,7 @@ class RedLaserShot:
 
         self.speed = 30.0 + owner.get('deltaspeed', 0.0)
 
-    def destroy(self, args):
+    def destroy(self):
         self.owner.endObject()
 
     def update(self):
@@ -61,7 +61,7 @@ class RedLaserShot:
 
 
 class BlueLaserShot(RedLaserShot):
-    particle = 'spark_emitter_blue'
+    particle = 'spark_emitter_plasma'
 
 
 def timer_explode(self):
@@ -185,8 +185,8 @@ class AssaultRifle:
             # TODO - raycast or spawn projectile
             #Laser(None, ref=self.user.barrel)
             #BulletTracer(None, ref=self.ob.children[0])
-            b = self.owner.scene.addObject(self.bullet, self.barrel)
-            b.owner.worldPosition = self.ob.children[0].worldPosition
+            b = self.ob.scene.addObject(self.bullet, self.barrel)
+            b.worldPosition = self.ob.children[0].worldPosition
             b['deltaspeed'] = self.user.owner.getLinearVelocity(True)[1]
             return True
 
@@ -198,7 +198,7 @@ class AssaultRifle:
             self.primary_next_time = now + self.melee_delay
 
             target = None
-            if self.user.controlled:
+            if self.user.player_id is not None:
                 target = self.user.auto_target['_component']
             else:
                 ai = bge.logic.game.ai.getAIController(self.user)
@@ -258,11 +258,13 @@ class Needler(AssaultRifle):
             # TODO - raycast or spawn projectile
             #Laser(None, ref=self.user.barrel)
             #BulletTracer(None, ref=self.ob.children[0])
-            speed = self.user.owner.getLinearVelocity(True)[1] + 30.0
-            b = self.shoot(None, ref=self.user.barrel, args={'speed': speed, 'vector': vector})
-            b.owner.worldPosition = self.ob.children[0].worldPosition
+            b = self.ob.scene.addObject(self.bullet, self.barrel)
+            b.worldPosition = self.ob.children[0].worldPosition
+            b['deltaspeed'] = self.user.owner.getLinearVelocity(True)[1]
 
-            if self.user.controlled:
+            ## TODO - Fix homing needlers
+            """
+            if self.user.player_id is not None:
                 b.set_target(self.user.auto_target)
             else:
                 ai = bge.logic.game.ai.getAIController(self.user)
@@ -273,6 +275,7 @@ class Needler(AssaultRifle):
                         b.set_target(None)
 
             return True
+            """
 
         return False
 
@@ -335,7 +338,7 @@ class FuelRod:
         now = bge.logic.getFrameTime()
         if now >= self.primary_next_time:
             self.primary_next_time = now + self.primary_delay
-            b = self.owner.scene.addObject('fuelrod_shot', self.user.barrel)
+            b = self.ob.scene.addObject('fuelrod_shot', self.user.barrel)
             b['deltaspeed'] = self.user.owner.getLinearVelocity(True)[1]
             return True
         return False

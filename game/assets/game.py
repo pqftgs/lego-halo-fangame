@@ -61,86 +61,85 @@ class Game:
             # Must wait 1 frame for overlay scenes to initiate
             return
 
-        if len(bge.logic.players) < 2:
-            # Players not yet registered, defer
-            return
-
         self.init_hud = False
 
         # Player 1
         player = bge.logic.players[0]
 
-        # Icon
-        icon = hud.objects['p1_icon']
-        if not len(icon.children):
-            icon.color = [0, 1, 0, 1]
-            ic = hud.addObject(hud.objectsInactive[player.icon], icon)
-            ic.worldPosition[1] -= 0.1
-            ic.setParent(icon)
+        if player is not None:
+            # Icon
+            icon = hud.objects['p1_icon']
+            if not len(icon.children):
+                icon.color = [0, 1, 0, 1]
+                ic = hud.addObject(hud.objectsInactive[player.icon], icon)
+                ic.worldPosition[1] -= 0.1
+                ic.setParent(icon)
 
-        # Hearts
-        hearts = hud.objects['p1_hearts']
-        for c in list(hearts.children):
-            c.endObject()
+            # Hearts
+            hearts = hud.objects['p1_hearts']
+            for c in list(hearts.children):
+                c.endObject()
 
-        for i in range(player.hp):
-            ob = hud.addObject(hud.objectsInactive['icon-heart'], hearts)
-            ob.setParent(hearts)
-            ob.worldPosition[0] += i * 0.32
-
-            if i + 1 == player.hp:
-                # Last heart is animated
-                ob.state = 2
-
-        # Shield
-        if player.shield is not None:
-            for i in range(player.shield):
-                ob = hud.addObject(hud.objectsInactive['shield'], hearts)
+            for i in range(player.hp):
+                ob = hud.addObject(hud.objectsInactive['icon-heart'], hearts)
                 ob.setParent(hearts)
-                ob.worldPosition[0] += i * 0.22
-                ob.worldPosition[2] -= 0.3
+                ob.worldPosition[0] += i * 0.32
+
+                if i + 1 == player.hp:
+                    # Last heart is animated
+                    ob.state = 2
+
+            # Shield
+            if player.shield is not None:
+                for i in range(player.shield):
+                    ob = hud.addObject(hud.objectsInactive['shield'], hearts)
+                    ob.setParent(hearts)
+                    ob.worldPosition[0] += i * 0.22
+                    ob.worldPosition[2] -= 0.3
 
         # Player 2
         player = bge.logic.players[1]
 
-        # Icon
-        icon = hud.objects['p2_icon']
-        if not len(icon.children):
-            icon.color = [0, 0, 1, 1]
+        if player is not None:
+            # Icon
+            icon = hud.objects['p2_icon']
+            if not len(icon.children):
+                icon.color = [0, 0, 1, 1]
+                ic = hud.addObject(hud.objectsInactive[player.icon], icon)
+                ic.worldPosition[1] -= 0.1
+                ic.setParent(icon)
+
+            # Hearts
+            hearts = hud.objects['p2_hearts']
+            for c in list(hearts.children):
+                c.endObject()
+
+            for i in range(player.hp):
+                ob = hud.addObject(hud.objectsInactive['icon-heart'], hearts)
+                ob.setParent(hearts)
+                ob.worldPosition[0] -= i * 0.32
+
+                if i + 1 == player.hp:
+                    # Last heart is animated
+                    ob.state = 2
+
+            # Shield
+            if player.shield is not None:
+                for i in range(player.shield):
+                    ob = hud.addObject(hud.objectsInactive['shield'], hearts)
+                    ob.setParent(hearts)
+                    ob.worldPosition[0] -= i * 0.22
+                    ob.worldPosition[2] -= 0.3
+
+            # Icon
+            icon = hud.objects['p1_icon']
+            for c in list(icon.children):
+                c.endObject()
             ic = hud.addObject(hud.objectsInactive[player.icon], icon)
-            ic.worldPosition[1] -= 0.1
             ic.setParent(icon)
 
-        # Hearts
-        hearts = hud.objects['p2_hearts']
-        for c in list(hearts.children):
-            c.endObject()
-
-        for i in range(player.hp):
-            ob = hud.addObject(hud.objectsInactive['icon-heart'], hearts)
-            ob.setParent(hearts)
-            ob.worldPosition[0] -= i * 0.32
-
-            if i + 1 == player.hp:
-                # Last heart is animated
-                ob.state = 2
-
-        # Shield
-        if player.shield is not None:
-            for i in range(player.shield):
-                ob = hud.addObject(hud.objectsInactive['shield'], hearts)
-                ob.setParent(hearts)
-                ob.worldPosition[0] -= i * 0.22
-                ob.worldPosition[2] -= 0.3
-
-        # Icon
-        icon = hud.objects['p1_icon']
-        for c in list(icon.children):
-            c.endObject()
-        ic = hud.addObject(hud.objectsInactive[player.icon], icon)
-        ic.setParent(icon)
-
         # TODO - Split this up rather than refreshing everything
+        # Also duplicate code wtf
 
     def update(self):
         now = bge.logic.getFrameTime()

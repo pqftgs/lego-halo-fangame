@@ -69,7 +69,7 @@ class Chief(Controllable):
         if group is None:
             raise ValueError('Minifigs can only be spawned via group instance')
 
-        self.set_weapon(group.get('weapon', None))
+        #self.set_weapon(group.get('weapon', None))
         self.team = group.get('team', self.team)
 
         if 'player' in group:
@@ -268,6 +268,7 @@ class Chief(Controllable):
 
                         bge.logic.players[self.player_id] = None
                         # Spawn a new minifig
+                        #"""
                         ## TODO - Delay this a few seconds
                         new = owner.scene.addObject(type(self).__name__, owner)
 
@@ -275,6 +276,7 @@ class Chief(Controllable):
                         new['player'] = self.player_id
                         new['weapon'] = type(self.weapon).__name__
                         new['team'] = self.team
+                        #"""
 
                         # Rather than automatically re-entering the vehicle,
                         # lets give vehicles their own hitpoints and make riders
@@ -290,10 +292,8 @@ class Chief(Controllable):
                         # Drop random loot (studs, heart, weapon, shield?)
                         pass
 
-                    self.owner.endObject()
-
+                self.owner['DEAD'] = True
                 self.owner.endObject()
-                self.owner = None
 
     def become_player(self, player_id):
         if not None in bge.logic.players:
@@ -735,7 +735,7 @@ class Chief(Controllable):
 
 
         keystate = self.keystate
-        if keystate['shoot'] == '1':
+        if keystate['shoot']:
             if self.weapon is not None:
                 if self.target_position is not None:
                     dist, vec, lvec = self.barrel.getVectTo(self.target_position)
@@ -1021,64 +1021,3 @@ COMPONENTS['Graycrew'] = Graycrew
 COMPONENTS['Grunt'] = Grunt
 COMPONENTS['Jackal'] = Jackal
 COMPONENTS['Hunter'] = Hunter
-
-
-def register(cont):
-    owner = cont.owner
-
-    if 'init' in owner:
-        return
-    owner['init'] = 0
-
-    group = owner.groupObject
-    if group is None:
-        # Spawned dynamically, no need to run this
-        del owner['class']
-        return
-
-    # Placed in editor. Spawn the full thing and delete this object
-    if bge.logic.netplay.server:
-        comp = eval(owner['class'])(None, ref=group)
-        # But keep the group to preserve custom logic on the server
-        comp.owner['group'] = group
-        group['owner'] = comp.owner
-
-        if 'weapon' in group:
-            comp.setWeapon(group['weapon'])
-
-        if 'team' in group:
-            team = group['team']
-        else:
-            team = getattr(comp, 'team', 2)  # 0 = UNSC, 1 = covenant
-
-        if 'player' in group:
-            bge.logic.players.append(comp)
-            number = len(bge.logic.players)
-
-            if number == 1:
-                # Set as player and register AI stub
-                comp.setPlayer(number)
-                #bge.logic.getCurrentScene().active_camera = comp.cam
-                bge.render.showMouse(False)
-                comp.owner.collisionCallbacks.append(comp.studcollision)
-                bge.logic.game.ai.register(comp, team, 'AI_Stub')
-            else:
-                # Anything else becomes AI until pressing start
-                ai = bge.logic.game.ai.register(comp, team, 'AI_Standard')
-                ai.setLeader(bge.logic.game.ai.getAIController(bge.logic.players[0]))
-        else:
-            # Register AI-controlled unit
-            ai = bge.logic.game.ai.register(comp, team, 'AI_Standard')
-            if 'squad' in group:
-                # Ensure player was registered
-                if ensure_player_registered():
-                    ai.setLeader(bge.logic.game.ai.getAIController(bge.logic.players[0]))
-                else:
-                    print ("No groups with player property")
-
-    for m in list(group.groupMembers):
-        if m.parent is None:
-            m.endObject()
-
-    if not bge.logic.netplay.server:
-        group.endObject()
