@@ -8,8 +8,11 @@ class RedLaserShot:
     def __init__(self, owner):
         self.owner = owner
         self.timer = bge.logic.getFrameTime() + 4.0
-
         self.speed = 30.0 + owner.get('deltaspeed', 0.0)
+
+        vector = owner.get('vector', None)
+        if vector is not None:
+            owner.alignAxisToVect(vector, 1)
 
     def destroy(self):
         self.owner.endObject()
@@ -188,6 +191,8 @@ class AssaultRifle:
             b = self.ob.scene.addObject(self.bullet, self.barrel)
             b.worldPosition = self.ob.children[0].worldPosition
             b['deltaspeed'] = self.user.owner.getLinearVelocity(True)[1]
+            if vector is not None:
+                b['vector'] = vector
             return True
 
         return False
@@ -261,6 +266,7 @@ class Needler(AssaultRifle):
             b = self.ob.scene.addObject(self.bullet, self.barrel)
             b.worldPosition = self.ob.children[0].worldPosition
             b['deltaspeed'] = self.user.owner.getLinearVelocity(True)[1]
+            b['vector'] = vector
 
             ## TODO - Fix homing needlers
             """
@@ -274,8 +280,8 @@ class Needler(AssaultRifle):
                     except:
                         b.set_target(None)
 
-            return True
             """
+            return True
 
         return False
 
@@ -294,8 +300,12 @@ class Sniper(AssaultRifle):
         if now >= self.primary_next_time:
             self.primary_next_time = now + self.primary_delay
 
-            barrel = self.user.barrel
+            #barrel = self.user.barrel
+            barrel = self.barrel
             ob = barrel.scene.addObject('sniper_shot', barrel)
+
+            if vector is not None:
+                ob.alignAxisToVect(vector, 1)
 
             vec = mathutils.Vector((0.0, 1.0, 0.0))
             vec = vec * ob.worldOrientation.inverted()
@@ -340,6 +350,8 @@ class FuelRod:
             self.primary_next_time = now + self.primary_delay
             b = self.ob.scene.addObject('fuelrod_shot', self.user.barrel)
             b['deltaspeed'] = self.user.owner.getLinearVelocity(True)[1]
+            if vector is not None:
+                b['vector'] = vector
             return True
         return False
 

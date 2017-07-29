@@ -259,10 +259,10 @@ class AI_Standard:
         return False
 
     def check_los(self, target):
-        #source = self.component.owner
-        #pos = self.component.owner
-        source = self.component.barrel
-        pos = self.component.barrel
+        source = self.component.owner
+        pos = self.component.owner
+        #source = self.component.weapon.barrel
+        #pos = self.component.weapon.barrel
 
         count = 0
         to = target.component.owner

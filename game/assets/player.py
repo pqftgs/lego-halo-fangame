@@ -97,7 +97,6 @@ class Chief(Controllable):
         self.lefthand = self.armature.children['minifig-lefthand']
         self.righthand = self.armature.children['minifig-righthand']
         #self.hatempty = self.armature.children['minifig-hat']
-        self.barrel = self.owner.children['minifig-barrel']
 
         if self.body in ['chief-body', 'arbiter-body', 'elite-body']:
             self.shield_ob = self.armature.children['minifig-shield']
@@ -738,12 +737,14 @@ class Chief(Controllable):
         if keystate['shoot']:
             if self.weapon is not None:
                 if self.target_position is not None:
-                    dist, vec, lvec = self.barrel.getVectTo(self.target_position)
+                    dist, vec, lvec = self.weapon.barrel.getVectTo(self.target_position)
                 else:
                     vec = None
                     dist = 100.0
 
-                if dist < 4.5: # TODO - Make melee range proportional to barrel distance
+                melee_dist = self.owner.getDistanceTo(self.weapon.barrel)
+
+                if dist < melee_dist:
                     if self.weapon.secondary(vector=vec):
                         self.time_since_shooting = 0
                         self.loudtimer = 60
@@ -897,7 +898,6 @@ class Grunt(Chief):
 
         self.lefthand = self.armature.children['grunt-lefthand']
         self.righthand = self.armature.children['grunt-righthand']
-        self.barrel = self.owner.children['grunt-barrel']
 
     def playIdle(self):
         self.armature.stopAction()
@@ -927,7 +927,6 @@ class Jackal(Grunt):
 
         self.lefthand = self.armature.children['jackal-lefthand']
         self.righthand = self.armature.children['jackal-righthand']
-        self.barrel = self.owner.children['jackal-barrel']
         self.shield_ob = self.armature.children['jackal-shield']
 
     def takeDamage(self, data):
@@ -965,7 +964,6 @@ class Hunter(Grunt):
 
         self.lefthand = self.armature.children['hunter-lefthand']
         self.righthand = self.armature.children['hunter-righthand']
-        self.barrel = self.owner.children['hunter-barrel']
 
     def takeDamage(self, data):
         ob = data.get('ob', None)
