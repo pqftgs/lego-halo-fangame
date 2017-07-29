@@ -4,7 +4,6 @@ import bge
 import mathutils
 import math
 import collections
-import utils
 
 
 class AIManager:
@@ -34,7 +33,7 @@ class AIManager:
                 break
 
             if i == self.max_units - 1:
-                print ("WARNING - exeeding %d AI" % self.max_units)
+                logging.warning("Exeeding AI soft cap at %d" % self.max_units)
                 ai = aitype(self, component, team)
                 self.units.append(ai)
                 self.max_units += 1
