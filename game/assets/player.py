@@ -142,7 +142,7 @@ class Chief(Controllable):
 
     def studcollision(self, other, point, normal):
         # Only local players do stud detection
-        if 'stud' in other and '_component' in other:
+        if 'stud' in other:
             if len(bge.logic.getSceneList()) == 1:
                 # Technically possible to collide with stud on first frame
                 return
@@ -151,22 +151,24 @@ class Chief(Controllable):
             bge.logic.getCurrentScene().addObject('sound-coin')
 
             # Remove the stud
-            comp = other['_component']
-            if comp is not None:
-                # Add score
-                hud = bge.logic.getSceneList()[1]
-                hud.objects['p1_studs']['Text'] += SCORES[comp.owner['stud']]
+            # Add score
+            hud = bge.logic.getSceneList()[1]
+            hud.objects['p1_studs']['Text'] += SCORES[other['stud']]
 
-                # Play pickup effect
-                pos = bge.logic.getCurrentScene().active_camera.getVectTo(comp.owner.worldPosition)[2]
-                pos = pos * hud.active_camera.worldOrientation.inverted()
-                #pos += hud.active_camera.worldPosition
-                obj = comp.owner.name.split('-dynamic')[0]
-                fake = hud.addObject(obj + '-fake')
-                fake.worldPosition = pos
-                fake['p'] = '1'
-                fake.scaling = [0.2, 0.2, 0.2]
-                hud.objects['p1_studcolor'].replaceMesh(obj)
+            # Play pickup effect
+            pos = bge.logic.getCurrentScene().active_camera.getVectTo(other.worldPosition)[2]
+            pos = pos * hud.active_camera.worldOrientation.inverted()
+            #pos += hud.active_camera.worldPosition
+            obj = other.name.split('-dynamic')[0]
+            fake = hud.addObject(obj + '-fake')
+            fake.worldPosition = pos
+            fake['p'] = '1'
+            fake.scaling = [0.2, 0.2, 0.2]
+            hud.objects['p1_studcolor'].replaceMesh(obj)
+
+            other.endObject()
+            # Workaround for delayed endObject bug
+            del other['stud']
 
         else:
             # Set ground timer
@@ -263,7 +265,7 @@ class Chief(Controllable):
                                 if value + lost_stud_score <= stud_score:
                                     lost_stud_score += value
 
-                                    stud = owner.scene.addObject(STUDS[stud_id] + -'dynamic')
+                                    stud = owner.scene.addObject(STUDS[stud_id] + '-dynamic')
                                     stud.worldPosition = owner.worldPosition
                                     stud.setLinearVelocity((random.uniform(-5.0, 5.0), random.uniform(-5.0, 5.0), random.uniform(5.0, 7.0)))
 
