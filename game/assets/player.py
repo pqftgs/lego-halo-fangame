@@ -297,7 +297,7 @@ class Chief(Controllable):
                         # Drop random loot (studs, heart, weapon, shield?)
                         pass
 
-                self.owner['DEAD'] = True
+                self.owner['_invalid'] = 0
                 self.owner.endObject()
 
     def become_player(self, player_id):
@@ -366,8 +366,9 @@ class Chief(Controllable):
         #if bge.logic.netplay.server:
         #    print ("TODO: Forward to clients")
 
-    def destroy(self):
-        self.owner.endObject()
+    # See takeDamage instead
+    #def destroy(self):
+    #    self.owner.endObject()
 
     ## TODO - Get rid of these. Keeping for now because AI uses it.
     def setForward(self, state):
@@ -660,6 +661,12 @@ class Chief(Controllable):
         return True
 
     def update(self):
+        # Workaround to delayed endObject bug
+        if '_invalid' in self.owner:
+            self.owner['_invalid'] += 1
+            logging.warning('Previously called endObject() on {} at {}. So far {} extra logic tic(s)'.format(self.owner.name, self.owner.worldPosition, self.owner['_invalid']))
+            return
+
         if self.disabled:
             seat = self.vehicle.seats[self.passenger_id]
             if seat is not None:
