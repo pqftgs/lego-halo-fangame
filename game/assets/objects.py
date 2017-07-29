@@ -25,7 +25,10 @@ class Controllable:
         # Workaround for BGE's lousy input system
         self.ACCENTPRESSED = False
 
-        self.using_controller = False
+        # 0 = AI or None
+        # 1 = Keyboard
+        # 2+ = Controller ID - 2
+        self.control_id = 0
 
     def set_keyboard_input(self):
         keystate = self.keystate
@@ -38,7 +41,7 @@ class Controllable:
                 keystate[index] = False
 
     def set_controller_input(self):
-        if not self.using_controller:
+        if not self.control_id:
             ## TODO - Needs rework
             if bge.logic.joysticks[0] is not None:
                 # Press start to join
@@ -122,5 +125,5 @@ class Controllable:
         else:
             # Unplugged.  Revert to AI
             self.become_ai()
-            self.using_controller = False
+            self.control_id = 0
             #bge.logic.game.ai.getAIController().setLeader('player')

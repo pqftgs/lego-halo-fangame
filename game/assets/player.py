@@ -71,14 +71,13 @@ class Chief(Controllable):
 
         #self.set_weapon(group.get('weapon', None))
         self.team = group.get('team', self.team)
+        self.control_id = group.get('control_id', 0)
+        self.player_id = group.get('player', None)
 
-        if 'player' in group:
-            player_id = group['player']
-            # Int player ID is used to make players respawn with the same ID
-            # Can also be used to specify in editor but it must be unique
-            if type(player_id) is not int:
-                player_id = None
-            self.become_player(player_id)
+        if self.control_id or self.player_id == 0:
+            # Player ID must be uniquely defined in editor
+            # 0 = player 1, 1 = player 2, etc
+            self.become_player(self.player_id)
         else:
             self.become_ai()
 
@@ -226,48 +225,53 @@ class Chief(Controllable):
                     # Set group properties if applicable
                     # There should always be a group object now that networking
                     # has been nuked. Only delete if the group has no props.
+                    ## TODO - Also check for logic bricks before deleting
                     group = owner.groupObject
                     if len(group.getPropertyNames()):
                         group['dead'] = True
                     else:
                         group.endObject()
 
-                    old_ai = bge.logic.game.ai.getAIController(self)
-                    squad = list(old_ai.squad)
-                    if len(squad):
-                        for s in squad:
-                            s.setLeader(None)
+                    if self.player_id is None:
+                        # Only do AI squads here.
+                        # Player squads will wait for respawn instead
+                        old_ai = bge.logic.game.ai.getAIController(self)
+                        squad = list(old_ai.squad)
+                        if len(squad):
+                            for s in squad:
+                                s.setLeader(None)
 
                     ## TODO - Unregister should be doing setLeader(None)
                     bge.logic.game.ai.unregister(self)
 
                     if self.player_id is not None:
-                        # Drop some of the player's studs
-                        hud = bge.logic.getSceneList()[1]
-                        stud_score = int(hud.objects['p' + str(self.player_id + 1) + '_studs']['Text'])
-                        lost_stud_score = 0
-                        # Drops between 2 - 5 studs with 25% chance of dropping gold
-                        for i in range(0, random.randint(2, 5)):
-                            gold = random.random()
-                            if gold > 0.75:
-                                stud_id = 1
-                            else:
-                                stud_id = 0
+                        if self.player_id == 0 or self.control_id:
+                            # Drop some of the player's studs
+                            hud = bge.logic.getSceneList()[1]
+                            stud_score = int(hud.objects['p' + str(self.player_id + 1) + '_studs']['Text'])
+                            lost_stud_score = 0
+                            # Drops between 2 - 5 studs with 25% chance of dropping gold
+                            for i in range(0, random.randint(2, 5)):
+                                gold = random.random()
+                                if gold > 0.75:
+                                    stud_id = 1
+                                else:
+                                    stud_id = 0
 
-                            value = SCORES[stud_id]
+                                value = SCORES[stud_id]
 
-                            if value + lost_stud_score <= stud_score:
-                                lost_stud_score += value
+                                if value + lost_stud_score <= stud_score:
+                                    lost_stud_score += value
 
-                                stud = owner.scene.addObject(STUDS[stud_id] + -'dynamic')
-                                stud.worldPosition = owner.worldPosition
-                                stud.setLinearVelocity((random.uniform(-5.0, 5.0), random.uniform(-5.0, 5.0), random.uniform(5.0, 7.0)))
+                                    stud = owner.scene.addObject(STUDS[stud_id] + -'dynamic')
+                                    stud.worldPosition = owner.worldPosition
+                                    stud.setLinearVelocity((random.uniform(-5.0, 5.0), random.uniform(-5.0, 5.0), random.uniform(5.0, 7.0)))
 
-                                hud.objects['p1_studs']['Text'] = stud_score - lost_stud_score
+                                    hud.objects['p1_studs']['Text'] = stud_score - lost_stud_score
 
-                        bge.logic.players[self.player_id] = None
-                        # Spawn a new minifig
-                        #"""
+                            bge.logic.players[self.player_id] = None
+
+                        # Respawn
                         ## TODO - Delay this a few seconds
                         new = owner.scene.addObject(type(self).__name__, owner)
 
@@ -275,7 +279,7 @@ class Chief(Controllable):
                         new['player'] = self.player_id
                         new['weapon'] = type(self.weapon).__name__
                         new['team'] = self.team
-                        #"""
+                        new['control_id'] = self.control_id
 
                         # Rather than automatically re-entering the vehicle,
                         # lets give vehicles their own hitpoints and make riders
@@ -284,6 +288,8 @@ class Chief(Controllable):
                         ## TODO
                         # Former squad members need to become followers again
                         # Add this when I get the delay thing figured out
+                        # No longer necessary. They figure this out on their
+                        # own.
                         #for s in squad:
                         #    s.setLeader('player')
 
@@ -299,16 +305,10 @@ class Chief(Controllable):
             logging.warning('Max players already reached')
             return
 
-        if player_id is None:
-            player_id = 0
-            for p in bge.logic.players:
-                if p is None:
-                    break
-                player_id += 1
-
-        elif bge.logic.players[player_id] is not None:
+        if bge.logic.players[player_id] is not None:
             raise ValueError('Player slot in use')
 
+        ## TODO - Set control ID
         self.player_id = player_id
         self.owner['is_player'] = True  # Prop used for player-only triggers
         bge.logic.players[player_id] = self
@@ -326,14 +326,13 @@ class Chief(Controllable):
 
     def become_ai(self):
         owner = self.owner
-        if self.player_id is not None:
-            # Previously a player
+        if 'is_player' in owner:
+            # Previously a player. Keep the ID in case it rejoins.
             bge.logic.players[self.player_id] = None
-            self.player_id = None
-            del owner['is_player']
 
             # Stop picking up studs
             self.owner.collisionCallbacks.remove(self.studcollision)
+            del owner['is_player']
 
             # Unregister AI stub
             bge.logic.game.ai.unregister(self)
@@ -346,7 +345,7 @@ class Chief(Controllable):
         bge.logic.game.ai.register(self, self.team, 'AI_Standard')
 
         # Set as a squad follower if applicable
-        if True:
+        if 'player' in owner.groupObject or 'squad' in owner.groupObject:
             self.become_follower()
 
         #ai.setLeader(bge.logic.game.ai.getAIController(bge.logic.players[0]))
@@ -354,27 +353,7 @@ class Chief(Controllable):
     def become_follower(self):
         # Assuming it's already an AI-controlled unit
         ai = bge.logic.game.ai.getAIController(self)
-
-        # Follow the player with the least amount of followers
-        least_player_ai = None
-        least_amount = 0
-        for p in bge.logic.players:
-            if p is not None:
-                if self.team != p.team:
-                    logging.warning('Enemies cannot join the player squad')
-                    continue
-
-                p_ai = bge.logic.game.ai.getAIController(p)
-                if least_player_ai is None or len(p_ai.squad) < least_amount:
-                    least_player_ai = p_ai
-
-        if least_player_ai is None:
-            # No players exist right now. Try again later.
-            logging.warning('FIXME: No players exist. Try joining the squad later')
-            ## Do stuff here
-            pass
-        else:
-            ai.setLeader(least_player_ai)
+        ai.setLeader('player')
 
     def set_weapon(self, weapon):
         if self.weapon is not None:
@@ -412,8 +391,10 @@ class Chief(Controllable):
     def update_player_input(self):
         if self.player_id == 0:
             self.set_keyboard_input()
-        else:
+        elif self.player_id > 0:
             self.set_controller_input()
+            if not self.control_id:
+                return
 
         # Mouse buttons
         """
